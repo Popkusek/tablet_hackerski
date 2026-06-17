@@ -378,3 +378,19 @@ body {
     display: none; /* Ukryty domyślnie, JS go pokaże dla admina */
     width: 40px;
 }
+/* --- MINIGIERKA HAKERSKA --- */
+.hex-item {
+    cursor: pointer;
+    padding: 8px;
+    background-color: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 3px;
+    transition: all 0.2s;
+    font-weight: bold;
+}
+
+.hex-item:hover {
+    background-color: #00ff00;
+    color: #111;
+    box-shadow: 0 0 10px #00ff00;
+}
