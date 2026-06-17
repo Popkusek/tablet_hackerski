@@ -20,25 +20,39 @@ updateSystemTime();
 
 // Ustawiamy interwał, który co 1000 milisekund (1 sekunda) odpala funkcję ponownie, aby zegar na bieżąco "chodził"
 setInterval(updateSystemTime, 1000);
+
 // --- SYSTEM LOGOWANIA ---
-document.getElementById('login-btn').addEventListener('click', function() {
-    // Pobieramy wpisane wartości
+const loginBtn = document.getElementById('login-btn');
+const passInput = document.getElementById('pass-input');
+
+// Funkcja sprawdzająca dane logowania
+function attemptLogin() {
     const loginValue = document.getElementById('login-input').value;
-    const passValue = document.getElementById('pass-input').value;
+    const passValue = passInput.value;
     const errorMsg = document.getElementById('login-error');
 
-    // Ustawiamy proste hasło (możesz zmienić na dowolne)
+    // Wymagany login i hasło (możesz zmienić na co chcesz)
     if (loginValue === 'admin' && passValue === '1234') {
-        // Czyścimy błąd, ukrywamy panel logowania i pokazujemy aplikację
-        errorMsg.textContent = '';
+        errorMsg.textContent = ''; // Czyszczenie błędu
+        
+        // Ukrywamy panel logowania i pokazujemy główny interfejs
         document.getElementById('login-panel').style.display = 'none';
         document.getElementById('hacking-app').style.display = 'flex';
         
-        // Czyszczenie inputów po zalogowaniu
+        // Czyścimy wpisane dane ze względów bezpieczeństwa
         document.getElementById('login-input').value = '';
-        document.getElementById('pass-input').value = '';
+        passInput.value = '';
     } else {
-        // Pokazujemy błąd
         errorMsg.textContent = 'ODMOWA DOSTĘPU: Nieprawidłowe dane.';
+    }
+}
+
+// Reakcja na kliknięcie przycisku "ZALOGUJ"
+loginBtn.addEventListener('click', attemptLogin);
+
+// Reakcja na wciśnięcie klawisza "Enter" w polu z hasłem
+passInput.addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+        attemptLogin();
     }
 });
