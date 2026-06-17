@@ -89,7 +89,6 @@ function enterMainApp() {
     } else {
         adminBtn.style.display = 'none';
     }
-    resetGameView();
 }
 
 // --- ZMIANA HASŁA DLA NOWYCH ---
@@ -185,105 +184,4 @@ function renderUserList() {
         }
         ul.appendChild(li);
     }
-}
-// --- MECHANIKA MINIGRY (SZUKANIE KODU) ---
-let gameTimer;
-let timeLeft = 15; // Czas na zhakowanie (w sekundach)
-let targetCode = "";
-
-// Generator dwuznakowych kodów hex (np. A4, F9, 0B)
-function generateRandomHex() {
-    const chars = "0123456789ABCDEF";
-    return chars[Math.floor(Math.random() * 16)] + chars[Math.floor(Math.random() * 16)];
-}
-
-function resetGameView() {
-    const gameArea = document.getElementById('game-area');
-    gameArea.style.display = "block"; // Zwykły blok tekstowy
-    gameArea.innerHTML = `
-        <p class="matrix-text">&gt; ZESTAWIANIE POŁĄCZENIA: ROUTER 0/3/1...</p>
-        <p class="matrix-text">&gt; SYSTEM GOTOWY.</p>
-        <button id="start-hack-btn" style="padding: 15px; background: #00ff00; color: #111; border: none; cursor: pointer; margin-top: 30px; font-weight: bold; font-family: monospace; font-size: 1.1rem;">[ ROZPOCZNIJ ŁAMANIE ZABEZPIECZEŃ ]</button>
-    `;
-    
-    document.getElementById('start-hack-btn').addEventListener('click', startHackingMinigame);
-    
-    // Reset dolnego panelu
-    document.getElementById('timer-text').textContent = "00:00";
-    document.querySelector('.target-data').textContent = "BRAK CELU";
-    document.querySelector('.progress-bar-current').style.width = "0%";
-}
-
-function startHackingMinigame() {
-    const gameArea = document.getElementById('game-area');
-    const targetDataSpan = document.querySelector('.target-data');
-    const timerText = document.getElementById('timer-text');
-    const progressBar = document.querySelector('.progress-bar-current');
-    
-    // Zmieniamy kontener na siatkę (Grid), żeby ułożyć kody w równe rzędy
-    gameArea.innerHTML = ""; 
-    gameArea.style.display = "grid";
-    gameArea.style.gridTemplateColumns = "repeat(8, 1fr)";
-    gameArea.style.gap = "10px";
-    gameArea.style.textAlign = "center";
-
-    // Wypełniamy tablicę 48 losowymi kodami
-    const hexArray = [];
-    for(let i = 0; i < 48; i++) {
-        hexArray.push(generateRandomHex());
-    }
-
-    // Wybieramy jeden kod jako cel
-    targetCode = hexArray[Math.floor(Math.random() * hexArray.length)];
-    targetDataSpan.textContent = "ZNAJDŹ KOD: [" + targetCode + "]";
-
-    // Wyświetlamy kody na ekranie
-    hexArray.forEach(hex => {
-        const span = document.createElement('span');
-        span.textContent = hex;
-        span.className = "hex-item"; // Klasa z CSS dla animacji najechania
-        
-        // Logika kliknięcia
-        span.onclick = function() {
-            if(hex === targetCode) {
-                endGame(true, "DOSTĘP PRZYZNANY: Zabezpieczenia złamane.");
-            } else {
-                endGame(false, "DOSTĘP ODRZUCONY: Wprowadzono błędny kod.");
-            }
-        };
-        gameArea.appendChild(span);
-    });
-
-    // Uruchomienie odliczania
-    timeLeft = 15;
-    progressBar.style.width = "100%";
-    clearInterval(gameTimer);
-    
-    gameTimer = setInterval(() => {
-        timeLeft--;
-        timerText.textContent = "00:" + String(timeLeft).padStart(2, '0');
-        
-        // Animacja paska postępu
-        const percentage = (timeLeft / 15) * 100;
-        progressBar.style.width = percentage + "%";
-        
-        if(timeLeft <= 0) {
-            endGame(false, "DOSTĘP ODRZUCONY: Czas minął.");
-        }
-    }, 1000);
-}
-
-function endGame(isWin, message) {
-    clearInterval(gameTimer); // Zatrzymujemy czas
-    const gameArea = document.getElementById('game-area');
-    const color = isWin ? "#00ff00" : "#ff3333";
-    
-    gameArea.style.display = "block";
-    gameArea.innerHTML = `
-        <h2 style='color: ${color}; text-align: center; margin-top: 50px; letter-spacing: 2px;'>${isWin ? "SUKCES" : "PORAŻKA"}</h2>
-        <p style='text-align: center; margin-top: 10px; opacity: 0.8;'>${message}</p>
-    `;
-    
-    // Po 3 sekundach wracamy do ekranu startowego
-    setTimeout(resetGameView, 3000);
 }
