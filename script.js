@@ -20,3 +20,25 @@ updateSystemTime();
 
 // Ustawiamy interwał, który co 1000 milisekund (1 sekunda) odpala funkcję ponownie, aby zegar na bieżąco "chodził"
 setInterval(updateSystemTime, 1000);
+// --- SYSTEM LOGOWANIA ---
+document.getElementById('login-btn').addEventListener('click', function() {
+    // Pobieramy wpisane wartości
+    const loginValue = document.getElementById('login-input').value;
+    const passValue = document.getElementById('pass-input').value;
+    const errorMsg = document.getElementById('login-error');
+
+    // Ustawiamy proste hasło (możesz zmienić na dowolne)
+    if (loginValue === 'admin' && passValue === '1234') {
+        // Czyścimy błąd, ukrywamy panel logowania i pokazujemy aplikację
+        errorMsg.textContent = '';
+        document.getElementById('login-panel').style.display = 'none';
+        document.getElementById('hacking-app').style.display = 'flex';
+        
+        // Czyszczenie inputów po zalogowaniu
+        document.getElementById('login-input').value = '';
+        document.getElementById('pass-input').value = '';
+    } else {
+        // Pokazujemy błąd
+        errorMsg.textContent = 'ODMOWA DOSTĘPU: Nieprawidłowe dane.';
+    }
+});
