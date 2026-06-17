@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trener Tabletów Hackerskich</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <!-- GŁÓWNY KONTENER TABLETU (OBRACOWY) -->
+    <div class="tablet-frame">
+        
+        <!-- Fizyczne detale tabletu (przyciski, głośniki) -->
+        <div class="physical-details">
+            <div class="speaker-grille"></div>
+            <div class="camera-lens"></div>
+            <div class="volume-buttons">
+                <div class="vol-up"></div>
+                <div class="vol-down"></div>
+            </div>
+            <div class="power-button"></div>
+        </div>
+
+        <!-- EKRAN TABLETU -->
+        <div class="tablet-screen">
+            
+            <!-- PASEK STANU SYSTEMU (GÓRNY) -->
+            <div class="os-status-bar">
+                <span class="os-connection">📡 FIB_SECURE_LINK</span>
+                <span class="os-time" id="os-time">12:34</span>
+                <span class="os-battery">88% 🔋</span>
+            </div>
+
+            <!-- OKNO APLIKACJI HAKERSKIEJ (GŁÓWNE) -->
+            <div class="hacking-app">
+                
+                <div class="app-header">
+                    <h1>&gt; FIB::NETWORK_INTRUSION_v3</h1>
+                    <div class="app-controls">
+                        <span class="control-btn min">-</span>
+                        <span class="control-btn close">X</span>
+                    </div>
+                </div>
+
+                <!-- GŁÓWNA STREFA GRY (Tu będą liczby) -->
+                <div class="game-area" id="game-area">
+                    <p class="matrix-text">&gt; SYSTEM GOTOWY.</p>
+                    <p class="matrix-text">&gt; CZEKAM NA INICJALIZACJĘ...</p>
+                </div>
+
+                <!-- DOLNY PANEL INFORMACYJNY -->
+                <div class="target-info">
+                    <p>CEL: <span class="target-data">192.168.X.XXX / C4-D1_A9</span></p>
+                    <div class="progress-bar-container">
+                        <span class="timer-text" id="timer-text">00:45</span>
+                        <div class="progress-bar-full">
+                            <div class="progress-bar-current"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+ <!-- EFEKT SZKLANEGO EKRANU (ODBLASK I SCANLINES) -->
+            <div class="screen-overlay"></div>
+        </div>
+    </div>
+
+    <!-- Podpięcie logiki JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
+
+</body>
+</html>
