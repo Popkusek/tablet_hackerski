@@ -676,3 +676,96 @@ body {
 
 .btn-save { background: #00ff00; color: #111; }
 .btn-cancel { background: #333; color: #ccc; }
+/* --- HACKCONNECT SOLVER --- */
+.solver-container {
+    width: fit-content;
+    margin: 20px auto;
+    background: #111;
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+}
+
+.solver-grid {
+    display: grid;
+    /* 6 kolumn: CelLewy, Pole, OperatorH, Pole, OperatorH, Pole */
+    grid-template-columns: 60px 60px 40px 60px 40px 60px;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+}
+
+.s-target {
+    background: #0a290a;
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    padding: 15px 0;
+    font-weight: bold;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+    font-family: 'Courier New', monospace;
+}
+
+.s-cell {
+    background: #222;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 15px 0;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 4px;
+    min-height: 52px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Courier New', monospace;
+}
+
+.s-cell.solved {
+    color: #00ff00;
+    border-color: #00ff00;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+.s-op {
+    background: #333;
+    color: #00ff00;
+    border: 1px solid #444;
+    cursor: pointer;
+    padding: 8px 2px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    border-radius: 4px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+}
+.s-op:hover { background: #444; }
+.s-op option {
+    background: #222;
+    color: #fff;
+}
+
+.solver-controls {
+    margin-top: 25px;
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.solver-controls button {
+    flex: 1;
+    padding: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    letter-spacing: 1px;
+}
+
+.btn-solve { background: #00ff00; color: #111; }
+.btn-solve:hover { background: #33ff33; box-shadow: 0 0 15px rgba(0,255,0,0.4); }
+.btn-mode { background: #444; color: #eee; font-size: 0.8rem;}

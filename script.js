@@ -122,7 +122,7 @@ function renderMainDashboard() {
     if (!gameArea) return;
     
     const headerH1 = document.querySelector('.app-header h1');
-    if(headerH1) headerH1.innerHTML = '&gt; FIB::OS_MAIN_DESKTOP';
+    if(headerH1) headerH1.innerHTML = '&gt; FIB';
     
     gameArea.innerHTML = `
         <div class="dashboard-grid">
@@ -134,9 +134,9 @@ function renderMainDashboard() {
                 <div class="hack-icon">🗄️</div>
                 <div class="hack-title">FIB::DATABASE</div>
             </div>
-            <div class="hack-tile locked">
-                <div class="hack-icon">📡</div>
-                <div class="hack-title">FIB::TRACKING</div>
+            <div class="hack-tile" id="app-calculator">
+                <div class="hack-icon">🧮</div>
+                <div class="hack-title">FIB::CALCULATOR</div>
             </div>
         </div>
     `;
@@ -145,6 +145,8 @@ function renderMainDashboard() {
     const btnDb = document.getElementById('app-database');
     if(btnHacks) btnHacks.addEventListener('click', renderHackMenu);
     if(btnDb) btnDb.addEventListener('click', renderDatabase);
+	const btnCalc = document.getElementById('app-calculator');
+    if(btnCalc) btnCalc.addEventListener('click', renderCalculator);
 }
 
 // 7. MODUŁ HAKERSKI - MENU
@@ -190,7 +192,7 @@ function renderDatabase() {
     if (!gameArea) return;
     
     const headerH1 = document.querySelector('.app-header h1');
-    if(headerH1) headerH1.innerHTML = '&gt; FIB::DATABASE_SECURE_AUTH';
+    if(headerH1) headerH1.innerHTML = '&gt; FIB::DATABASE';
 
     gameArea.innerHTML = `
         <div style="margin-bottom: 20px; text-align: left; padding-left: 40px;">
@@ -228,7 +230,7 @@ function renderDatabaseContent() {
     if (!gameArea) return;
     
     const headerH1 = document.querySelector('.app-header h1');
-    if(headerH1) headerH1.innerHTML = '&gt; FIB::SECURE_DATABASE_DRIVE';
+    if(headerH1) headerH1.innerHTML = '&gt; FIB::DATABASE';
 
     const isAdmin = usersDB[currentUser] && usersDB[currentUser].role === 'admin';
     let adminButtonHtml = isAdmin ? `<button id="add-note-btn" class="admin-note-btn">[+] UTWÓRZ WPIS</button>` : '';
@@ -267,7 +269,8 @@ function renderNotesTiles() {
         tile.className = 'note-tile';
         tile.textContent = note.title;
         tile.onclick = () => {
-            viewNoteDetail(note);
+            // Przekazujemy również INDEX (numer) notatki
+            viewNoteDetail(note, index);
         };
         grid.appendChild(tile);
     });
@@ -276,6 +279,9 @@ function renderNotesTiles() {
 function renderNoteForm() {
     const gameArea = document.getElementById('game-area');
     if (!gameArea) return;
+    
+    const headerH1 = document.querySelector('.app-header h1');
+    if(headerH1) headerH1.innerHTML = '&gt; FIB::DATABASE';
     
     gameArea.innerHTML = `
         <div class="note-form">
@@ -309,13 +315,30 @@ function renderNoteForm() {
     });
 }
 
-function viewNoteDetail(note) {
+// ZAKTUALIZOWANY PODGLĄD NOTATKI (Z PRZYCISKAMI ADMINA)
+function viewNoteDetail(note, index) {
     const gameArea = document.getElementById('game-area');
     if (!gameArea) return;
     
+    const headerH1 = document.querySelector('.app-header h1');
+    if(headerH1) headerH1.innerHTML = '&gt; FIB::DATABASE';
+
+    // Sprawdzamy, czy zalogowany użytkownik jest adminem
+    const isAdmin = usersDB[currentUser] && usersDB[currentUser].role === 'admin';
+    let adminControls = '';
+    
+    // Jeśli tak, generujemy przyciski EDYTUJ i USUŃ
+    if (isAdmin) {
+        adminControls = `
+            <button id="edit-note-btn" style="padding: 8px 15px; background: #ccaa00; color: #111; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; margin-left: 10px;">EDYTUJ</button>
+            <button id="delete-note-btn" style="padding: 8px 15px; background: #ff3333; color: #111; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; margin-left: 10px;">USUŃ</button>
+        `;
+    }
+    
     gameArea.innerHTML = `
-        <div style="margin-bottom: 20px; text-align: left; padding-left: 40px;">
+        <div style="margin-bottom: 20px; text-align: left; padding-left: 40px; display: flex; align-items: center;">
             <button id="back-to-db-btn" style="padding: 8px 15px; background: #222; color: #aaa; border: 1px solid #444; cursor: pointer; border-radius: 3px; font-weight: bold;">&lt; WSTECZ DO BAZY</button>
+            ${adminControls}
         </div>
         <div style="padding: 0 40px; color: #eee; font-family: sans-serif; text-align: left;">
             <h2 style="color: #00ff00; border-bottom: 1px solid #333; padding-bottom: 10px; letter-spacing: 1px; font-weight: bold;">${note.title}</h2>
@@ -324,6 +347,68 @@ function viewNoteDetail(note) {
     `;
     const backToDbBtn = document.getElementById('back-to-db-btn');
     if(backToDbBtn) backToDbBtn.addEventListener('click', renderDatabaseContent);
+
+    // Podpinamy funkcje pod przyciski admina (jeśli istnieją)
+    if (isAdmin) {
+        // Logika usuwania
+        document.getElementById('delete-note-btn').addEventListener('click', () => {
+            if(confirm('Czy na pewno chcesz trwale usunąć ten rekord z bazy FIB?')) {
+                notesDB.splice(index, 1); // Usuwa 1 element pod danym indeksem
+                saveNotes();
+                renderDatabaseContent(); // Powrót do kafelków
+            }
+        });
+
+        // Logika edycji (otwiera nowy formularz)
+        document.getElementById('edit-note-btn').addEventListener('click', () => {
+            renderEditNoteForm(index);
+        });
+    }
+}
+
+// NOWA FUNKCJA: FORMULARZ EDYCJI ISTNIEJĄCEJ NOTATKI
+function renderEditNoteForm(index) {
+    const gameArea = document.getElementById('game-area');
+    if (!gameArea) return;
+    
+    const headerH1 = document.querySelector('.app-header h1');
+    if(headerH1) headerH1.innerHTML = '&gt; FIB::DATABASE';
+    
+    const note = notesDB[index];
+
+    gameArea.innerHTML = `
+        <div class="note-form">
+            <h3>EDYCJA REKORDU</h3>
+            <input type="text" id="edit-note-title" value="${note.title}" autocomplete="off">
+            <textarea id="edit-note-content">${note.content}</textarea>
+            <div class="form-btns">
+                <button class="btn-save" id="edit-save-btn">ZAPISZ ZMIANY</button>
+                <button class="btn-cancel" id="edit-cancel-btn">ANULUJ</button>
+            </div>
+        </div>
+    `;
+
+    // Anulowanie wraca do podglądu tej konkretnej notatki
+    document.getElementById('edit-cancel-btn').addEventListener('click', () => {
+        viewNoteDetail(notesDB[index], index);
+    });
+
+    // Zapisywanie zmian i nadpisywanie bazy
+    document.getElementById('edit-save-btn').addEventListener('click', () => {
+        const titleInput = document.getElementById('edit-note-title');
+        const contentInput = document.getElementById('edit-note-content');
+        if(!titleInput || !contentInput) return;
+        
+        const title = titleInput.value.trim();
+        const content = contentInput.value.trim();
+
+        if (!title || !content) return alert('Wypełnij wszystkie pola!');
+
+        // Zamiast push (dodawania nowej), nadpisujemy starą pod konkretnym indeksem
+        notesDB[index] = { title, content };
+        saveNotes();
+        viewNoteDetail(notesDB[index], index); // Zmiany zapisane, pokaż nowy podgląd
+    });
 }
 
 // 9. ZMIANA HASŁA DLA NOWYCH KONTEKSTÓW
@@ -588,3 +673,159 @@ function endMemoryGame(win, msg) {
     `;
     setTimeout(renderHackMenu, 3000);
 }
+// 12. APLIKACJA: HACKCONNECT SOLVER (Łamacz matryc)
+let mathMode = 'standard'; 
+
+function renderCalculator() {
+    const gameArea = document.getElementById('game-area');
+    if (!gameArea) return;
+    
+    const headerH1 = document.querySelector('.app-header h1');
+    if(headerH1) headerH1.innerHTML = '&gt; FIB::DECRYPT_MATRIX';
+    
+    // Szablon rozwijanej listy (X odpowiada za mnożenie)
+    const opSelect = `
+        <select class="s-op">
+            <option value="+">+</option>
+            <option value="-">-</option>
+            <option value="*">X</option>
+            <option value="/">/</option>
+        </select>
+    `;
+
+    gameArea.innerHTML = `
+        <div style="margin-bottom: 10px; text-align: left; padding-left: 40px;">
+            <button id="back-btn" style="padding: 8px 15px; background: #222; color: #aaa; border: 1px solid #444; cursor: pointer; border-radius: 3px; font-weight: bold;">&lt; POWRÓT</button>
+        </div>
+        
+        <div class="solver-container">
+            <div class="solver-grid">
+                <div></div>
+                <input type="text" class="s-target" id="t0" value="" autocomplete="off" maxlength="3">
+                <div></div>
+                <input type="text" class="s-target" id="t1" value="" autocomplete="off" maxlength="3">
+                <div></div>
+                <input type="text" class="s-target" id="t2" value="" autocomplete="off" maxlength="3">
+                
+                <input type="text" class="s-target" id="l0" value="" autocomplete="off" maxlength="3">
+                <div class="s-cell" id="o0">?</div>
+                ${opSelect.replace('class="s-op"', 'class="s-op" id="h0"')}
+                <div class="s-cell" id="o1">?</div>
+                ${opSelect.replace('class="s-op"', 'class="s-op" id="h1"')}
+                <div class="s-cell" id="o2">?</div>
+
+                <div></div>
+                ${opSelect.replace('class="s-op"', 'class="s-op" id="v0"')}
+                <div></div>
+                ${opSelect.replace('class="s-op"', 'class="s-op" id="v1"')}
+                <div></div>
+                ${opSelect.replace('class="s-op"', 'class="s-op" id="v2"')}
+
+                <input type="text" class="s-target" id="l1" value="" autocomplete="off" maxlength="3">
+                <div class="s-cell" id="o3">?</div>
+                ${opSelect.replace('class="s-op"', 'class="s-op" id="h2"')}
+                <div class="s-cell" id="o4">?</div>
+                ${opSelect.replace('class="s-op"', 'class="s-op" id="h3"')}
+                <div class="s-cell" id="o5">?</div>
+
+                <div></div>
+                ${opSelect.replace('class="s-op"', 'class="s-op" id="v3"')}
+                <div></div>
+                ${opSelect.replace('class="s-op"', 'class="s-op" id="v4"')}
+                <div></div>
+                ${opSelect.replace('class="s-op"', 'class="s-op" id="v5"')}
+
+                <input type="text" class="s-target" id="l2" value="" autocomplete="off" maxlength="3">
+                <div class="s-cell" id="o6">?</div>
+                ${opSelect.replace('class="s-op"', 'class="s-op" id="h4"')}
+                <div class="s-cell" id="o7">?</div>
+                ${opSelect.replace('class="s-op"', 'class="s-op" id="h5"')}
+                <div class="s-cell" id="o8">?</div>
+            </div>
+            
+            <div class="solver-controls">
+                <button class="btn-mode" id="mode-btn" onclick="toggleMathMode()">TRYB: MATEMATYCZNY (BODMAS)</button>
+                <button class="btn-solve" onclick="solveHackConnect()">ROZWIĄŻ MATRYCĘ</button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('back-btn').addEventListener('click', renderMainDashboard);
+}
+
+window.toggleMathMode = function() {
+    const btn = document.getElementById('mode-btn');
+    if (mathMode === 'standard') {
+        mathMode = 'seq';
+        btn.innerText = "TRYB: LINIOWY (OD LEWEJ DO PRAWEJ)";
+    } else {
+        mathMode = 'standard';
+        btn.innerText = "TRYB: MATEMATYCZNY (BODMAS)";
+    }
+};
+
+function evalMath(a, op1, b, op2, c) {
+    let res;
+    if (mathMode === 'standard') {
+        res = Function('"use strict";return (' + a + op1 + b + op2 + c + ')')();
+    } else {
+        let step1 = Function('"use strict";return (' + a + op1 + b + ')')();
+        res = Function('"use strict";return (' + step1 + op2 + c + ')')();
+    }
+    return Number.isInteger(res) ? res : 999999; 
+}
+
+window.solveHackConnect = function() {
+    // Pobieramy wpisane cele
+    const t = [parseInt(document.getElementById('t0').value), parseInt(document.getElementById('t1').value), parseInt(document.getElementById('t2').value)];
+    const l = [parseInt(document.getElementById('l0').value), parseInt(document.getElementById('l1').value), parseInt(document.getElementById('l2').value)];
+    
+    // Walidacja - upewniamy się, że wszystkie zielone pola są wypełnione
+    if (t.some(isNaN) || l.some(isNaN)) {
+        alert("SYSTEM FIB: Uzupełnij wszystkie zielone pola z liczbami (cele) przed rozpoczęciem łamania!");
+        return;
+    }
+
+    // Pobieramy operatory z rozwijanej listy (zwraca "+", "-", "*", "/")
+    const h = [document.getElementById('h0').value, document.getElementById('h1').value, document.getElementById('h2').value, document.getElementById('h3').value, document.getElementById('h4').value, document.getElementById('h5').value];
+    const v = [document.getElementById('v0').value, document.getElementById('v1').value, document.getElementById('v2').value, document.getElementById('v3').value, document.getElementById('v4').value, document.getElementById('v5').value];
+
+    for(let i=0; i<9; i++) {
+        let cell = document.getElementById('o'+i);
+        cell.textContent = "⚙️";
+        cell.classList.remove('solved');
+    }
+
+    let validRows = [[], [], []];
+    for (let i = 1; i <= 9; i++) {
+        for (let j = 1; j <= 9; j++) {
+            for (let k = 1; k <= 9; k++) {
+                if (evalMath(i, h[0], j, h[1], k) === l[0]) validRows[0].push([i, j, k]);
+                if (evalMath(i, h[2], j, h[3], k) === l[1]) validRows[1].push([i, j, k]);
+                if (evalMath(i, h[4], j, h[5], k) === l[2]) validRows[2].push([i, j, k]);
+            }
+        }
+    }
+
+    for (let r0 of validRows[0]) {
+        for (let r1 of validRows[1]) {
+            for (let r2 of validRows[2]) {
+                if (evalMath(r0[0], v[0], r1[0], v[3], r2[0]) === t[0] &&
+                    evalMath(r0[1], v[1], r1[1], v[4], r2[1]) === t[1] &&
+                    evalMath(r0[2], v[2], r1[2], v[5], r2[2]) === t[2]) {
+                    
+                    const answers = [...r0, ...r1, ...r2];
+                    for(let i=0; i<9; i++) {
+                        let cell = document.getElementById('o'+i);
+                        cell.textContent = answers[i];
+                        cell.classList.add('solved');
+                    }
+                    return; 
+                }
+            }
+        }
+    }
+
+    alert("SYSTEM FIB: Błąd matrycy! Sprawdź, czy dobrze przepisałeś operatory i liczby.");
+    for(let i=0; i<9; i++) document.getElementById('o'+i).textContent = "X";
+};
