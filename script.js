@@ -89,8 +89,48 @@ function enterMainApp() {
     } else {
         adminBtn.style.display = 'none';
     }
+	// Uruchamiamy animację logowania do terminala
+    playTerminalLoginAnimation();
 }
-
+// --- ANIMACJA LOGOWANIA (TERMINAL) ---
+function playTerminalLoginAnimation() {
+    const gameArea = document.getElementById('game-area');
+    
+    // Przygotowujemy czarne tło i zieloną, "informatyczną" czcionkę
+    gameArea.innerHTML = `
+        <div id="terminal-output" style="color: #00ff00; font-family: 'Courier New', Courier, monospace; padding: 40px; font-size: 1.1rem; text-align: left; height: 100%; display: flex; flex-direction: column; justify-content: flex-start; letter-spacing: 1px;">
+        </div>
+    `;
+    
+    const terminal = document.getElementById('terminal-output');
+    
+    // Teksty, które będą się pojawiać linijka po linijce
+    const lines = [
+        "> INICJALIZACJA SYSTEMU KIOWAN v4.0...",
+        "> ZESTAWIANIE POŁĄCZENIA: ROUTER 0/7/7... [OK]",
+        "> WERYFIKACJA KLUCZY AUTORYZACYJNYCH...",
+        "> ODBLOKOWYWANIE ZASOBÓW LOKALNYCH... [OK]",
+        "> DOSTĘP PRZYZNANY. ŁADOWANIE INTERFEJSU..."
+    ];
+    
+    let delay = 0;
+    
+    // Pętla dodająca opóźnienie dla każdej linijki (symulacja ładowania)
+    lines.forEach((line) => {
+        setTimeout(() => {
+            terminal.innerHTML += `<p style="margin-bottom: 10px; text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);">${line}</p>`;
+        }, delay);
+        
+        // ZMIENIONY CZAS: Losowy czas oczekiwania (od 800ms do 1800ms)
+        delay += Math.floor(Math.random() * 1000) + 800; 
+    });
+    
+    // ZMIENIONY CZAS: Po wyświetleniu ostatniej linijki czekamy jeszcze 1.5 sekundy (1500ms) i ładujemy pulpit
+    setTimeout(() => {
+        renderDashboard();
+    }, delay + 1500);
+}
+    
 // --- ZMIANA HASŁA DLA NOWYCH ---
 
 // Wydzielamy logikę zmiany hasła do osobnej funkcji
@@ -184,4 +224,213 @@ function renderUserList() {
         }
         ul.appendChild(li);
     }
+}
+// --- MINIGRA: ZNAJDŹ I ZAPAMIĘTAJ ---
+let currentLevel = 1;
+let memoryTargets = [];
+let memoryTimer;
+let shuffleInterval; // Interwał do tasowania
+let timeLeft = 60; // Globalny czas na całość (w sekundach)
+
+// Funkcja inicjalizująca całą grę
+function startMemoryGame() {
+    currentLevel = 1;
+    memoryTargets = [];
+    timeLeft = 60; // Reset globalnego czasu
+    
+    clearInterval(memoryTimer);
+    clearInterval(shuffleInterval);
+    
+    startGlobalTimer();
+    startShuffleInterval();
+    loadMemoryLevel(currentLevel);
+}
+
+// Ekran główny - Pulpit z kafelkami
+function renderDashboard() {
+    const gameArea = document.getElementById('game-area');
+    
+    gameArea.innerHTML = `
+        <div class="dashboard-grid">
+            <div class="hack-tile" id="tile-memory">
+                <div class="hack-icon">🧠</div>
+                <div class="hack-title">Znajdź i zapamiętaj</div>
+            </div>
+            
+            <div class="hack-tile locked">
+                <div class="hack-icon">🔒</div>
+                <div class="hack-title">Wkrótce...</div>
+            </div>
+            
+            <div class="hack-tile locked">
+                <div class="hack-icon">🔒</div>
+                <div class="hack-title">Wkrótce...</div>
+            </div>
+        </div>
+    `;
+
+    // Podpięcie nowej funkcji startującej
+    document.getElementById('tile-memory').addEventListener('click', startMemoryGame);
+}
+
+// Ładowanie poziomu (1, 2 lub 3)
+function loadMemoryLevel(level) {
+    const target = String(Math.floor(Math.random() * 90000) + 10000);
+    memoryTargets.push(target);
+    
+    // Obliczanie rozmiaru siatki (Poz 1: 6x6, Poz 2: 7x7, Poz 3: 8x8)
+    let gridSize = level + 5; 
+    let totalButtons = gridSize * gridSize;
+    
+    let numbers = [target];
+    while(numbers.length < totalButtons) {
+        let randomNum = String(Math.floor(Math.random() * 90000) + 10000);
+        if(!numbers.includes(randomNum)) {
+            numbers.push(randomNum);
+        }
+    }
+    numbers.sort(() => Math.random() - 0.5);
+    
+    const gameArea = document.getElementById('game-area');
+    
+    gameArea.innerHTML = `
+        <div class="memory-game-container">
+            <div class="memory-header">
+                <div class="memory-level">${level}/3</div>
+                <div class="memory-title">Znajdź i zapamiętaj</div>
+                <div class="memory-target">${target}</div>
+            </div>
+            <div class="memory-grid" id="memory-grid" style="grid-template-columns: repeat(${gridSize}, 1fr);"></div>
+            
+            <div class="memory-timer-container">
+                <div class="memory-timer-bar" id="memory-timer-bar" style="width: ${(timeLeft / 60) * 100}%"></div>
+            </div>
+        </div>
+    `;
+    
+    const grid = document.getElementById('memory-grid');
+    numbers.forEach(num => {
+        let btn = document.createElement('button');
+        btn.className = 'memory-btn';
+        btn.textContent = num;
+        
+        // Skalowanie przycisków, żeby duże siatki się zmieściły
+        if(level === 2) btn.style.padding = "10px 14px";
+        if(level === 3) btn.style.padding = "8px 12px";
+
+        btn.onclick = () => {
+            if(num === target) {
+                if(level < 3) {
+                    loadMemoryLevel(level + 1);
+                } else {
+                    startRecallPhase();
+                }
+            } else {
+                endMemoryGame(false, "Kliknięto nieprawidłowy kod.");
+            }
+        };
+        grid.appendChild(btn);
+    });
+}
+
+// Faza 2: Pytanie z pamięci
+function startRecallPhase() {
+    const questionLevel = Math.floor(Math.random() * 3) + 1; 
+    const correctAnswer = memoryTargets[questionLevel - 1]; 
+    
+    let options = [correctAnswer];
+    while(options.length < 3) {
+        let randomNum = String(Math.floor(Math.random() * 90000) + 10000);
+        if(!options.includes(randomNum) && !memoryTargets.includes(randomNum)) {
+            options.push(randomNum);
+        }
+    }
+    options.sort(() => Math.random() - 0.5);
+    
+    const gameArea = document.getElementById('game-area');
+    gameArea.innerHTML = `
+        <div class="memory-game-container">
+            <div class="memory-header">
+                <div class="memory-title" style="margin-top: 50px;">Jaki znak był w poziomie ${questionLevel}</div>
+            </div>
+            <div class="recall-options" id="recall-options"></div>
+            
+            <div class="memory-timer-container">
+                <div class="memory-timer-bar" id="memory-timer-bar" style="width: ${(timeLeft / 60) * 100}%"></div>
+            </div>
+        </div>
+    `;
+    
+    const optionsContainer = document.getElementById('recall-options');
+    options.forEach(opt => {
+        let btn = document.createElement('button');
+        btn.className = 'memory-btn';
+        btn.textContent = opt;
+        btn.onclick = () => {
+            if(opt === correctAnswer) {
+                endMemoryGame(true, "DOSTĘP PRZYZNANY");
+            } else {
+                endMemoryGame(false, "Błędna odpowiedź. Odrzucono.");
+            }
+        }
+        optionsContainer.appendChild(btn);
+    });
+}
+
+// --- NOWE LOGIKI CZASU I TASOWANIA ---
+
+// Globalny zegar na całą grę (60 sekund)
+function startGlobalTimer() {
+    memoryTimer = setInterval(() => {
+        timeLeft -= 0.05; // Spadek co 50ms (dla płynnej animacji)
+        
+        const bar = document.getElementById('memory-timer-bar');
+        if (bar) {
+            bar.style.width = (timeLeft / 60) * 100 + "%";
+        }
+        
+        if(timeLeft <= 0) {
+            endMemoryGame(false, "Czas minął.");
+        }
+    }, 50); 
+}
+
+// Funkcja tasująca elementy co 5 sekund
+function startShuffleInterval() {
+    shuffleInterval = setInterval(() => {
+        // Tasowanie siatki (jeśli istnieje)
+        const grid = document.getElementById('memory-grid');
+        if (grid) {
+            const btns = Array.from(grid.children);
+            btns.sort(() => Math.random() - 0.5);
+            btns.forEach(btn => grid.appendChild(btn)); 
+        }
+        
+        // Tasowanie opcji pamięciowych (jeśli jesteśmy w fazie finałowej)
+        const options = document.getElementById('recall-options');
+        if (options) {
+            const btns = Array.from(options.children);
+            btns.sort(() => Math.random() - 0.5);
+            btns.forEach(btn => options.appendChild(btn));
+        }
+    }, 5000); 
+}
+
+// Koniec gry (Wygrana / Przegrana)
+function endMemoryGame(win, msg) {
+    clearInterval(memoryTimer); // Zatrzymujemy czas
+    clearInterval(shuffleInterval); // Zatrzymujemy tasowanie
+    
+    const gameArea = document.getElementById('game-area');
+    const color = win ? "#00ff00" : "#ff3333";
+    
+    gameArea.innerHTML = `
+        <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%;">
+            <h2 style="color:${color}; font-size:2.5rem; letter-spacing:2px;">${win ? 'SUKCES' : 'PORAŻKA'}</h2>
+            <p style="color:#888; margin-top:10px;">${msg}</p>
+        </div>
+    `;
+    
+    // Powrót do pulpitu po 3 sekundach
+    setTimeout(renderDashboard, 3000);
 }
