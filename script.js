@@ -532,7 +532,7 @@ const newPassConfirm = document.getElementById('new-pass-confirm');
 if(newPassInput) newPassInput.addEventListener('keypress', function(event) { if (event.key === 'Enter') changePassword(); });
 if(newPassConfirm) newPassConfirm.addEventListener('keypress', function(event) { if (event.key === 'Enter') changePassword(); });
 
-// 10. PANEL ADMINISTRATORA - ZARZĄDZANIE KONTY
+// 10. PANEL ADMINISTRATORA - ZARZĄDZANIE KONTAMI
 const openAdminBtn = document.getElementById('open-admin-btn');
 const closeAdminBtn = document.getElementById('close-admin-btn');
 if(openAdminBtn) openAdminBtn.addEventListener('click', () => { hideAllPanels(); if(pAdmin) pAdmin.style.display = 'flex'; renderUserList(); });
@@ -542,22 +542,29 @@ const createUserBtn = document.getElementById('create-user-btn');
 if(createUserBtn) createUserBtn.addEventListener('click', () => {
     const addLoginInput = document.getElementById('add-login');
     const addPassInput = document.getElementById('add-pass');
+    const addRoleInput = document.getElementById('add-role'); // Pobieramy naszą nową listę z HTML
+    
     if(!addLoginInput || !addPassInput) return;
     
     const login = addLoginInput.value.trim();
     const pass = addPassInput.value.trim();
+    const role = addRoleInput ? addRoleInput.value : 'user'; 
 
     if (!login || !pass) return alert('Wypełnij wszystkie pola!');
     if (usersDB[login]) return alert('Użytkownik już istnieje!');
 
-    usersDB[login] = { pass: pass, isNew: true, role: 'user' };
+    // Zapisujemy użytkownika z wybraną rolą
+    usersDB[login] = { pass: pass, isNew: true, role: role };
     saveDB();
     
+    // Czyszczenie formularza po udanym dodaniu
     addLoginInput.value = '';
     addPassInput.value = '';
+    if(addRoleInput) addRoleInput.value = 'user'; // Reset listy do domyślnej pozycji
     renderUserList();
 });
 
+// FUNKCJA KTÓREJ BRAKOWAŁO:
 function renderUserList() {
     const ul = document.getElementById('users-ul');
     if(!ul) return;
@@ -570,6 +577,7 @@ function renderUserList() {
         
         li.innerHTML = `<span>${roleInfo}<strong>${user}</strong>${newInfo}</span>`;
         
+        // Zabezpieczenie przed usunięciem głównego konta
         if (user !== 'admin' && user !== 'Popkus') { 
             const delBtn = document.createElement('button');
             delBtn.className = 'delete-btn';
