@@ -179,14 +179,15 @@ function renderHackMenu() {
     if(backBtn) backBtn.addEventListener('click', renderMainDashboard);
 }
 
-// 8. BAZA DANYCH NOTATEK (localStorage)
-let notesDB = JSON.parse(localStorage.getItem('fib_notes')) || [];
+// 8. SYSTEM FOLDERÓW I AKTA (localStorage)
+let foldersDB = JSON.parse(localStorage.getItem('fib_folders')) || [];
 const DB_PASSWORD = "7777";
 
-function saveNotes() {
-    localStorage.setItem('fib_notes', JSON.stringify(notesDB));
+function saveFolders() {
+    localStorage.setItem('fib_folders', JSON.stringify(foldersDB));
 }
 
+// Ekran logowania do głównej bazy
 function renderDatabase() {
     const gameArea = document.getElementById('game-area');
     if (!gameArea) return;
@@ -206,8 +207,7 @@ function renderDatabase() {
         </div>
     `;
 
-    const backBtn = document.getElementById('back-btn');
-    if(backBtn) backBtn.addEventListener('click', renderMainDashboard);
+    document.getElementById('back-btn').addEventListener('click', renderMainDashboard);
     
     const passIn = document.getElementById('db-pass-input');
     const dbLoginBtn = document.getElementById('db-login-btn');
@@ -225,119 +225,253 @@ function renderDatabase() {
     if(passIn) passIn.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkDbPass(); });
 }
 
+// Ekran główny - Lista Folderów
 function renderDatabaseContent() {
     const gameArea = document.getElementById('game-area');
     if (!gameArea) return;
     
     const headerH1 = document.querySelector('.app-header h1');
-    if(headerH1) headerH1.innerHTML = '&gt; FIB::DATABASE';
+    if(headerH1) headerH1.innerHTML = '&gt; FIB::DATABASE_ROOT';
 
     const isAdmin = usersDB[currentUser] && usersDB[currentUser].role === 'admin';
-    let adminButtonHtml = isAdmin ? `<button id="add-note-btn" class="admin-note-btn">[+] UTWÓRZ WPIS</button>` : '';
+    let adminButtonHtml = isAdmin ? `<button id="add-folder-btn" class="admin-note-btn" style="background: #00ff00; color: #111;">[+] UTWÓRZ KARTOTEKĘ (FOLDER)</button>` : '';
 
     gameArea.innerHTML = `
         <div class="notes-controls">
             <button id="back-btn" style="padding: 8px 15px; background: #222; color: #aaa; border: 1px solid #444; cursor: pointer; border-radius: 3px; font-weight: bold;">&lt; POWRÓT</button>
             ${adminButtonHtml}
         </div>
-        <div class="notes-grid" id="notes-grid"></div>
+        <div class="notes-grid" id="folders-grid"></div>
     `;
 
-    const backBtn = document.getElementById('back-btn');
-    if(backBtn) backBtn.addEventListener('click', renderMainDashboard);
-
+    document.getElementById('back-btn').addEventListener('click', renderMainDashboard);
     if (isAdmin) {
-        const addNoteBtn = document.getElementById('add-note-btn');
-        if(addNoteBtn) addNoteBtn.addEventListener('click', renderNoteForm);
+        document.getElementById('add-folder-btn').addEventListener('click', () => renderFolderForm());
     }
 
-    renderNotesTiles();
+    renderFolderTiles();
 }
 
-function renderNotesTiles() {
-    const grid = document.getElementById('notes-grid');
+function renderFolderTiles() {
+    const grid = document.getElementById('folders-grid');
     if (!grid) return;
     grid.innerHTML = '';
 
-    if (notesDB.length === 0) {
-        grid.innerHTML = `<p style="color: #666; grid-column: 1/-1; text-align: center; margin-top: 50px; font-family: 'Courier New', monospace; font-size: 1.2rem; letter-spacing: 2px; text-shadow: none;">&gt; SYSTEM_FIB: BRAK ZAPISANYCH REKORDÓW_</p>`;
+    if (foldersDB.length === 0) {
+        grid.innerHTML = `<p style="color: #666; grid-column: 1/-1; text-align: center; margin-top: 50px; font-family: 'Courier New', monospace; font-size: 1.2rem; letter-spacing: 2px; text-shadow: none;">&gt; SYSTEM_FIB: BRAK KARTOTEK W BAZIE_</p>`;
         return;
     }
 
-    notesDB.forEach((note, index) => {
+    foldersDB.forEach((folder, index) => {
         const tile = document.createElement('div');
         tile.className = 'note-tile';
-        tile.textContent = note.title;
+        
+        // Jeśli folder ma hasło, pokazujemy kłódkę
+        let icon = folder.password ? '🔐' : '📁';
+        
+        tile.innerHTML = `<div style="font-size: 2rem; margin-bottom: 10px;">${icon}</div><div>${folder.title}</div>`;
         tile.onclick = () => {
-            // Przekazujemy również INDEX (numer) notatki
-            viewNoteDetail(note, index);
+            if (folder.password) {
+                promptFolderPassword(index);
+            } else {
+                openFolder(index);
+            }
         };
         grid.appendChild(tile);
     });
 }
 
-function renderNoteForm() {
+// Logowanie do konkretnego folderu
+function promptFolderPassword(fIdx) {
+    const gameArea = document.getElementById('game-area');
+    const folder = foldersDB[fIdx];
+    
+    gameArea.innerHTML = `
+        <div style="margin-bottom: 20px; text-align: left; padding-left: 40px;">
+            <button id="back-to-root-btn" style="padding: 8px 15px; background: #222; color: #aaa; border: 1px solid #444; cursor: pointer; border-radius: 3px; font-weight: bold;">&lt; WSTECZ</button>
+        </div>
+        <div class="db-login-box">
+            <h3>KARTOTEKA ZASZYFROWANA</h3>
+            <p style="color: #aaa; margin-bottom: 15px;">${folder.title}</p>
+            <input type="password" id="folder-pass-input" placeholder="WPROWADŹ HASŁO" autocomplete="off">
+            <button id="folder-login-btn">AUTORYZUJ</button>
+            <p id="folder-error" style="color: #ff3333; font-weight: bold; margin-top: 12px; font-size: 0.9rem;"></p>
+        </div>
+    `;
+
+    document.getElementById('back-to-root-btn').addEventListener('click', renderDatabaseContent);
+    
+    function checkFolderPass() {
+        const passIn = document.getElementById('folder-pass-input');
+        if (passIn && passIn.value === folder.password) {
+            openFolder(fIdx);
+        } else {
+            document.getElementById('folder-error').textContent = "Błędne hasło dostępu.";
+        }
+    }
+
+    document.getElementById('folder-login-btn').addEventListener('click', checkFolderPass);
+    document.getElementById('folder-pass-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkFolderPass(); });
+}
+
+// Wnętrze folderu (Lista notatek wewnątrz)
+function openFolder(fIdx) {
     const gameArea = document.getElementById('game-area');
     if (!gameArea) return;
     
+    const folder = foldersDB[fIdx];
     const headerH1 = document.querySelector('.app-header h1');
-    if(headerH1) headerH1.innerHTML = '&gt; FIB::DATABASE';
+    if(headerH1) headerH1.innerHTML = `&gt; FIB::DIR_${folder.title.toUpperCase().replace(/\s/g, '_')}`;
+
+    const isAdmin = usersDB[currentUser] && usersDB[currentUser].role === 'admin';
+    let adminControls = '';
     
+    if (isAdmin) {
+        adminControls = `
+            <button id="add-note-btn" class="admin-note-btn">[+] DODAJ AKTA</button>
+            <button id="edit-folder-btn" style="padding: 8px 15px; background: #ccaa00; color: #111; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; margin-left: auto;">EDYTUJ FOLDER</button>
+            <button id="delete-folder-btn" style="padding: 8px 15px; background: #ff3333; color: #111; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; margin-left: 10px;">USUŃ FOLDER</button>
+        `;
+    }
+
+    gameArea.innerHTML = `
+        <div class="notes-controls" style="display: flex; gap: 10px; align-items: center; padding-right: 40px;">
+            <button id="back-to-root-btn" style="padding: 8px 15px; background: #222; color: #aaa; border: 1px solid #444; cursor: pointer; border-radius: 3px; font-weight: bold;">&lt; GŁÓWNY KATALOG</button>
+            ${adminControls}
+        </div>
+        <div style="padding: 0 40px; margin-bottom: 20px;">
+            <h2 style="color: #00ff00; border-bottom: 1px solid #333; padding-bottom: 5px;">Katalog: ${folder.title}</h2>
+        </div>
+        <div class="notes-grid" id="notes-grid"></div>
+    `;
+
+    document.getElementById('back-to-root-btn').addEventListener('click', renderDatabaseContent);
+
+    if (isAdmin) {
+        document.getElementById('add-note-btn').addEventListener('click', () => renderNoteForm(fIdx));
+        document.getElementById('edit-folder-btn').addEventListener('click', () => renderFolderForm(fIdx));
+        document.getElementById('delete-folder-btn').addEventListener('click', () => {
+            if(confirm(`Czy usunąć folder "${folder.title}" i wszystkie akta w nim zawarte?`)) {
+                foldersDB.splice(fIdx, 1);
+                saveFolders();
+                renderDatabaseContent();
+            }
+        });
+    }
+
+    // Generowanie notatek wewnątrz tego folderu
+    const grid = document.getElementById('notes-grid');
+    if (folder.notes.length === 0) {
+        grid.innerHTML = `<p style="color: #666; grid-column: 1/-1; margin-top: 20px; font-family: 'Courier New', monospace;">Brak akt w tym katalogu.</p>`;
+    } else {
+        folder.notes.forEach((note, nIdx) => {
+            const tile = document.createElement('div');
+            tile.className = 'note-tile';
+            tile.innerHTML = `<div>📄</div><div style="margin-top: 5px;">${note.title}</div>`;
+            tile.onclick = () => viewNoteDetail(fIdx, nIdx);
+            grid.appendChild(tile);
+        });
+    }
+}
+
+// Formularz tworzenia/edycji FOLDERU
+function renderFolderForm(editIdx = null) {
+    const gameArea = document.getElementById('game-area');
+    
+    let isEdit = editIdx !== null;
+    let defTitle = isEdit ? foldersDB[editIdx].title : '';
+    let defPass = isEdit ? foldersDB[editIdx].password : '';
+
     gameArea.innerHTML = `
         <div class="note-form">
-            <h3>NOWY REKORD OPERACYJNY</h3>
-            <input type="text" id="note-title" placeholder="Wprowadź tytuł notatki..." autocomplete="off">
-            <textarea id="note-content" placeholder="Wprowadź tajną zawartość wpisu..."></textarea>
+            <h3>${isEdit ? 'EDYCJA KARTOTEKI' : 'NOWA KARTOTEKA'}</h3>
+            <input type="text" id="folder-title" placeholder="Nazwa folderu (np. Akta Gangów)" value="${defTitle}" autocomplete="off">
+            <input type="text" id="folder-pass" placeholder="Hasło (zostaw puste, by nie blokować)" value="${defPass}" autocomplete="off" style="margin-top: -5px;">
             <div class="form-btns">
-                <button class="btn-save" id="note-save-btn">GENERUJ KAFELEK</button>
+                <button class="btn-save" id="folder-save-btn">ZAPISZ KARTOTEKĘ</button>
+                <button class="btn-cancel" id="folder-cancel-btn">ANULUJ</button>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('folder-cancel-btn').addEventListener('click', () => {
+        if(isEdit) openFolder(editIdx); else renderDatabaseContent();
+    });
+
+    document.getElementById('folder-save-btn').addEventListener('click', () => {
+        const title = document.getElementById('folder-title').value.trim();
+        const pass = document.getElementById('folder-pass').value.trim();
+        if (!title) return alert('Nazwa folderu jest wymagana!');
+
+        if (isEdit) {
+            foldersDB[editIdx].title = title;
+            foldersDB[editIdx].password = pass;
+        } else {
+            foldersDB.push({ title: title, password: pass, notes: [] });
+        }
+        saveFolders();
+        if(isEdit) openFolder(editIdx); else renderDatabaseContent();
+    });
+}
+
+// Formularz tworzenia/edycji NOTATKI w folderze
+function renderNoteForm(fIdx, editNoteIdx = null) {
+    const gameArea = document.getElementById('game-area');
+    
+    let isEdit = editNoteIdx !== null;
+    let folder = foldersDB[fIdx];
+    let defTitle = isEdit ? folder.notes[editNoteIdx].title : '';
+    let defContent = isEdit ? folder.notes[editNoteIdx].content : '';
+
+    gameArea.innerHTML = `
+        <div class="note-form">
+            <h3>${isEdit ? 'EDYCJA AKT' : 'NOWE AKTA DO: ' + folder.title}</h3>
+            <input type="text" id="note-title" placeholder="Tytuł akt..." value="${defTitle}" autocomplete="off">
+            <textarea id="note-content" placeholder="Treść operacyjna...">${defContent}</textarea>
+            <div class="form-btns">
+                <button class="btn-save" id="note-save-btn">ZAPISZ AKTA</button>
                 <button class="btn-cancel" id="note-cancel-btn">ANULUJ</button>
             </div>
         </div>
     `;
 
-    const cancelBtn = document.getElementById('note-cancel-btn');
-    const saveBtn = document.getElementById('note-save-btn');
-    
-    if(cancelBtn) cancelBtn.addEventListener('click', renderDatabaseContent);
-    if(saveBtn) saveBtn.addEventListener('click', () => {
-        const titleInput = document.getElementById('note-title');
-        const contentInput = document.getElementById('note-content');
-        if(!titleInput || !contentInput) return;
-        
-        const title = titleInput.value.trim();
-        const content = contentInput.value.trim();
+    document.getElementById('note-cancel-btn').addEventListener('click', () => {
+        if(isEdit) viewNoteDetail(fIdx, editNoteIdx); else openFolder(fIdx);
+    });
 
-        if (!title || !content) return alert('Wszystkie pola formularza muszą zostać uzupełnione!');
+    document.getElementById('note-save-btn').addEventListener('click', () => {
+        const title = document.getElementById('note-title').value.trim();
+        const content = document.getElementById('note-content').value.trim();
+        if (!title || !content) return alert('Wypełnij wszystkie pola!');
 
-        notesDB.push({ title, content });
-        saveNotes();
-        renderDatabaseContent();
+        if (isEdit) {
+            foldersDB[fIdx].notes[editNoteIdx] = { title, content };
+        } else {
+            foldersDB[fIdx].notes.push({ title, content });
+        }
+        saveFolders();
+        if(isEdit) viewNoteDetail(fIdx, editNoteIdx); else openFolder(fIdx);
     });
 }
 
-// ZAKTUALIZOWANY PODGLĄD NOTATKI (Z PRZYCISKAMI ADMINA)
-function viewNoteDetail(note, index) {
+// Podgląd konkretnej NOTATKI
+function viewNoteDetail(fIdx, nIdx) {
     const gameArea = document.getElementById('game-area');
-    if (!gameArea) return;
+    const note = foldersDB[fIdx].notes[nIdx];
     
-    const headerH1 = document.querySelector('.app-header h1');
-    if(headerH1) headerH1.innerHTML = '&gt; FIB::DATABASE';
-
-    // Sprawdzamy, czy zalogowany użytkownik jest adminem
     const isAdmin = usersDB[currentUser] && usersDB[currentUser].role === 'admin';
     let adminControls = '';
     
-    // Jeśli tak, generujemy przyciski EDYTUJ i USUŃ
     if (isAdmin) {
         adminControls = `
-            <button id="edit-note-btn" style="padding: 8px 15px; background: #ccaa00; color: #111; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; margin-left: 10px;">EDYTUJ</button>
-            <button id="delete-note-btn" style="padding: 8px 15px; background: #ff3333; color: #111; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; margin-left: 10px;">USUŃ</button>
+            <button id="edit-note-btn" style="padding: 8px 15px; background: #ccaa00; color: #111; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; margin-left: 10px;">EDYTUJ WPIS</button>
+            <button id="delete-note-btn" style="padding: 8px 15px; background: #ff3333; color: #111; border: none; cursor: pointer; border-radius: 3px; font-weight: bold; margin-left: 10px;">USUŃ WPIS</button>
         `;
     }
     
     gameArea.innerHTML = `
         <div style="margin-bottom: 20px; text-align: left; padding-left: 40px; display: flex; align-items: center;">
-            <button id="back-to-db-btn" style="padding: 8px 15px; background: #222; color: #aaa; border: 1px solid #444; cursor: pointer; border-radius: 3px; font-weight: bold;">&lt; WSTECZ DO BAZY</button>
+            <button id="back-to-folder-btn" style="padding: 8px 15px; background: #222; color: #aaa; border: 1px solid #444; cursor: pointer; border-radius: 3px; font-weight: bold;">&lt; WRÓĆ DO KATALOGU</button>
             ${adminControls}
         </div>
         <div style="padding: 0 40px; color: #eee; font-family: sans-serif; text-align: left;">
@@ -345,70 +479,19 @@ function viewNoteDetail(note, index) {
             <p style="margin-top: 20px; white-space: pre-wrap; line-height: 1.6; color: #ccc; font-size: 1.05rem;">${note.content}</p>
         </div>
     `;
-    const backToDbBtn = document.getElementById('back-to-db-btn');
-    if(backToDbBtn) backToDbBtn.addEventListener('click', renderDatabaseContent);
 
-    // Podpinamy funkcje pod przyciski admina (jeśli istnieją)
+    document.getElementById('back-to-folder-btn').addEventListener('click', () => openFolder(fIdx));
+
     if (isAdmin) {
-        // Logika usuwania
+        document.getElementById('edit-note-btn').addEventListener('click', () => renderNoteForm(fIdx, nIdx));
         document.getElementById('delete-note-btn').addEventListener('click', () => {
-            if(confirm('Czy na pewno chcesz trwale usunąć ten rekord z bazy FIB?')) {
-                notesDB.splice(index, 1); // Usuwa 1 element pod danym indeksem
-                saveNotes();
-                renderDatabaseContent(); // Powrót do kafelków
+            if(confirm('Na pewno usunąć ten dokument z bazy FIB?')) {
+                foldersDB[fIdx].notes.splice(nIdx, 1);
+                saveFolders();
+                openFolder(fIdx);
             }
         });
-
-        // Logika edycji (otwiera nowy formularz)
-        document.getElementById('edit-note-btn').addEventListener('click', () => {
-            renderEditNoteForm(index);
-        });
     }
-}
-
-// NOWA FUNKCJA: FORMULARZ EDYCJI ISTNIEJĄCEJ NOTATKI
-function renderEditNoteForm(index) {
-    const gameArea = document.getElementById('game-area');
-    if (!gameArea) return;
-    
-    const headerH1 = document.querySelector('.app-header h1');
-    if(headerH1) headerH1.innerHTML = '&gt; FIB::DATABASE';
-    
-    const note = notesDB[index];
-
-    gameArea.innerHTML = `
-        <div class="note-form">
-            <h3>EDYCJA REKORDU</h3>
-            <input type="text" id="edit-note-title" value="${note.title}" autocomplete="off">
-            <textarea id="edit-note-content">${note.content}</textarea>
-            <div class="form-btns">
-                <button class="btn-save" id="edit-save-btn">ZAPISZ ZMIANY</button>
-                <button class="btn-cancel" id="edit-cancel-btn">ANULUJ</button>
-            </div>
-        </div>
-    `;
-
-    // Anulowanie wraca do podglądu tej konkretnej notatki
-    document.getElementById('edit-cancel-btn').addEventListener('click', () => {
-        viewNoteDetail(notesDB[index], index);
-    });
-
-    // Zapisywanie zmian i nadpisywanie bazy
-    document.getElementById('edit-save-btn').addEventListener('click', () => {
-        const titleInput = document.getElementById('edit-note-title');
-        const contentInput = document.getElementById('edit-note-content');
-        if(!titleInput || !contentInput) return;
-        
-        const title = titleInput.value.trim();
-        const content = contentInput.value.trim();
-
-        if (!title || !content) return alert('Wypełnij wszystkie pola!');
-
-        // Zamiast push (dodawania nowej), nadpisujemy starą pod konkretnym indeksem
-        notesDB[index] = { title, content };
-        saveNotes();
-        viewNoteDetail(notesDB[index], index); // Zmiany zapisane, pokaż nowy podgląd
-    });
 }
 
 // 9. ZMIANA HASŁA DLA NOWYCH KONTEKSTÓW
